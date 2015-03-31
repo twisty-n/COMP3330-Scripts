@@ -119,7 +119,7 @@ def create_window(nn, error, files_list):
     win.mainloop()
 
 
-def train(activation_stream=False, iterations=0):
+def train(activation_stream=False, print_iters=0):
     """
     Trains a neural network
     """
@@ -171,6 +171,9 @@ def train(activation_stream=False, iterations=0):
                 print "up to iteration " +str(i) + "\tError: " + str(error_val)
                 error.append(error_val)
 
+                #Now we'll check which iteration we're up to, and if needed, dump the network
+                if stream and print_iters == i:
+                    dump(nn, files_made)
         else:
             error,validation_error = trainer.trainUntilConvergence(validationProportion=validation_proportion)
 
