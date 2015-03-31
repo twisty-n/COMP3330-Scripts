@@ -118,6 +118,12 @@ def create_window(nn, error, files_list):
     errorButton.pack()
     win.mainloop()
 
+def save_activation_plot(dumper=None, file_path):
+    from graphNN2d import load_dump as loader
+    dumper()
+    loader(file_path, lambda: savefig('foo.png', bbox_inches='tight'))
+
+
 
 def train(activation_stream=False, print_iters=0):
     """
@@ -155,6 +161,8 @@ def train(activation_stream=False, print_iters=0):
     error = []
     validation_error = []
     files_made = ['herp']
+
+    # TODO: make a run directory and pass that as a context where it is needed
 
     # Create out window
     worker = threading.Thread(target=create_window, kwargs={'nn':nn, 'error':error, 'files_list':files_made})
