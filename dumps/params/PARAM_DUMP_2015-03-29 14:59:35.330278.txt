@@ -1,0 +1,9 @@
+Hidden Layers [10, 5]
+Learning Decay:1
+Momentum: 0.05
+Hidden Class: SigmoidLayer'>
+Iterations: 5500
+Out Class: LinearLayer'>
+Batch LearningFalse
+Validation Proportion: 0
+Learning Rate: 0.095
