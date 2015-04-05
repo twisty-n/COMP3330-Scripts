@@ -4,6 +4,7 @@ import trainNN2D
 import subprocess
 import os
 import signal
+import atexit
 
 try:
     from Tkinter import *
@@ -79,24 +80,32 @@ class Command:
                                 shell=True)
         return subprocess.Popen(self.stringify(),
                                 shell=True)
-                                
-def monitor(process, iter_u, error_u):
+       
+def update(update, iter_u, error_u):
+    iter_u.delete(0, END)
+    iter_u.insert(0, update[0])
+    error_u.configure(text=update[1])
+
+                         
+def monitor(instance):
     # While the process isn't dead, update the boxes
-    while process.poll() is None:
-        update = process.stdout.readline().split(",")
-        iter_u.delete(0, END)
-        iter_u.insert(0, update[0])
-        error_u.configure(text=update[1])
-        
+    while instance._process.poll() is None:
+        update = instance._process.stdout.readline()
+        update = update.split(",")
+        print update[1]
+        #update[1].pop()
+        print str(update)
+        """update = instance._process.stdout.readline().split(",")
+        instance.iter_val = update[0]
+        instance.error_val = update[1]
+        instance._owner.event_generate("<<"+str(instance._id)+"update>>", when="tail")"""
+              
     
-def dispatch_monitor(process, iter_u, error_u):
+def dispatch_monitor(instance):
     worker = threading.Thread(target=monitor, 
-                              kwargs={'process': process,
-                                  'iter_u': iter_u,
-                                  'error_u': error_u})
+                              kwargs={'instance': instance})
     worker.setDaemon(True)
     worker.start()
-    print "Created new monitoring thread"
     
    
 class Log:
@@ -216,6 +225,9 @@ class TrainingInstance(Frame):
         self._id = _id_
         self._run_dir = None
         self._process = None
+        
+        self.iter_val = None
+        self.error_val = None
 
     def valid_params(self):
         # Eww
@@ -305,7 +317,13 @@ class TrainingInstance(Frame):
         
         self._owner.log.update("Preparing to execute command: "+command.stringify())
         self._process = command.execute(pipeout=True)
-        dispatch_monitor(self._process, self.Entry8, self.Label11)
+
+        # Set up our event bindings
+        self._owner._master.bind("<<"+str(self._id)+"update>>", lambda: update((self.iter_val, self.error_val),
+                                                                        self.Entry8,
+                                                                        self.Label11))        
+        
+        dispatch_monitor(self)
         return True
         
         
@@ -330,6 +348,8 @@ class TTrainer():
         _compcolor = '#d9d9d9' # X11 color: 'gray85'
         _ana1color = '#d9d9d9' # X11 color: 'gray85' 
         _ana2color = '#d9d9d9' # X11 color: 'gray85' 
+        
+        atexit.register(self.kill_children)
         
         self.created_trainers = 0
         self._master = master
@@ -438,6 +458,10 @@ class TTrainer():
         self.training_instances[instance_id].destroy()
         del self.training_instances[instance_id]
         self.log.update("Deleted training instance " + str(instance_id))
+        
+    def kill_children():
+        for id, trainer in self.training_instances.iteritems():
+            os.kill(trainer._process.pid, signal.SIGTERM)
 
 
 

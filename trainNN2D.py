@@ -292,10 +292,11 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
             error, validation_error = trainer.trainUntilConvergence(
                                 validationProportion=validation_proportion)
 
-        print "Training Complete.... Printing Error Plot"
+        #print "Training Complete.... Printing Error Plot"
     except:
-        print "Exception occured, performing emergency Dump!"
+        #print "Exception occured, performing emergency Dump!"
         # print "Error Information: " + str(e)
+        pass
     finally:
         dump(nn, files_made, dump_path, True, p_params)
         error_plot(error)
