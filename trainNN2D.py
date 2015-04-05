@@ -240,7 +240,7 @@ def train(activation_stream=False, print_iters=0):
                                 validationProportion=validation_proportion)
 
         print "Training Complete.... Printing Error Plot"
-    except Exception as e:
+    except:
         print "Exception occured, performing emergency Dump!"
         # print "Error Information: " + str(e)
     finally:
@@ -251,3 +251,7 @@ def train(activation_stream=False, print_iters=0):
 if __name__ == "__main__":
     if len(sys.argv) == 1:
         train(True, 50)
+    else:
+        # Being called as part of a batch routine, so we need to process the
+        # args
+        pass

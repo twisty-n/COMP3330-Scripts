@@ -125,6 +125,7 @@ class TrainingInstance(Frame):
     
     def dispatch_instance(self):
         # Make a call to psubprocess in here
+        self.configure(bg='green')
         self.state = InstanceStates.RUNNING
         
     def open_view_pane(self):
@@ -132,6 +133,7 @@ class TrainingInstance(Frame):
     
     def kill_instance(self):
         if not self.state == InstanceStates.PENDING:
+            self.configure(bg='red')
             self.state = InstanceStates.STOPPED
             self.Button2.configure(text='Close')
             self.Button2.configure(command=lambda: self._owner.delete_training_run(self._id))
