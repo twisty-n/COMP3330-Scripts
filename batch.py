@@ -1,17 +1,11 @@
 import sys
-from trainNN2D import PYTHON_EXE as p_path
-
+from trainNN2D import PYTHON_EXE as PY_PATH
+from Tkinter import Toplevel
+import trainNN2D
 try:
     from Tkinter import *
 except ImportError:
     from tkinter import *
-
-try:
-    import ttk
-    py3 = 0
-except ImportError:
-    import tkinter.ttk as ttk
-    py3 = 1
 
 
 def vp_start_gui():
@@ -47,7 +41,37 @@ class InstanceStates:
     PENDING = 1
     RUNNING = 2
     STOPPED = 3
-    
+   
+   
+class Log:
+    def __init__(self):
+        self._log_text = ""
+        top = Toplevel()
+        top.withdraw()
+        top.protocol("WM_DELETE_WINDOW", self.view_log)
+        top.columnconfigure(0, weight=1)
+        top.rowconfigure(0, weight=1)
+        top.title("Log")
+        self._pane = top
+        self._log_area = Text(top, borderwidth=2, relief="sunken")
+        self._log_area.config(font=("consolas", 12), undo=True, wrap='word', state=DISABLED)
+        self._log_area.grid(row=0, column=0, sticky="nsew", padx=2, pady=2)
+        self._active = False
+        
+    def update(self, text):
+        self._log_text += text +'\n';
+        self._log_area.config(state=NORMAL)
+        self._log_area.delete(1.0, END)
+        self._log_area.insert(END, self._log_text)
+        self._log_area.config(state=DISABLED)
+        
+    def view_log(self):
+        """
+        Toggle the logL window on or offs
+        :return:
+        """
+        self._pane.withdraw() if self._active else self._pane.deiconify()
+        self._active = not self._active
     
 class TrainingInstance(Frame):
     def __init__(self, parent, owner, _id_):
@@ -122,11 +146,33 @@ class TrainingInstance(Frame):
         self.state = InstanceStates.PENDING
         self._owner = owner
         self._id = _id_
+
+  
     
     def dispatch_instance(self):
+        """
+        ARGUMENT FORMAT:
+                Blank: Run as a standalone script
+          ELSE
+          
+              ARG 1: The directory that this training one will take place in
+              ARG 2: Learning Rate
+              ARG 3: Learning Decay
+              ARG 4: Momentum
+              ARG 5: Batch Learning
+              ARG 6: Hiddden Layers
+              ARG 7: Hidden Class
+              ARG 8: Output Class
+        """  
         # Make a call to psubprocess in here
         self.configure(bg='green')
         self.state = InstanceStates.RUNNING
+        
+        #create the run directory
+        run_dir = trainNN2D.RUN_MASTER_DIR + trainNN2D.now()
+        run_dir = "/'" + run_dir +"/'"
+        self._owner.log.update("Running command "+"")
+        
         
     def open_view_pane(self):
         pass
@@ -137,6 +183,7 @@ class TrainingInstance(Frame):
             self.state = InstanceStates.STOPPED
             self.Button2.configure(text='Close')
             self.Button2.configure(command=lambda: self._owner.delete_training_run(self._id))
+            # Kill the subprocess here
 
 
 class TTrainer():
@@ -148,7 +195,8 @@ class TTrainer():
         _ana2color = '#d9d9d9' # X11 color: 'gray85' 
         
         self.created_trainers = 0
-
+        self._master = master
+        self.log = Log()
 
         self.Frame1 = Frame(master)
         self.Frame1.pack(side=TOP)
@@ -191,7 +239,7 @@ class TTrainer():
 
         self.Label7 = Label(self.Frame1)
         self.Label7.pack(side=LEFT)
-        self.Label7.configure(text='''L-Class''')
+        self.Label7.configure(text='''O-Class''')
         self.Label7.configure(width=11)
 
         self.Label9 = Label(self.Frame1)
@@ -207,9 +255,16 @@ class TTrainer():
         self.Button3 = Button(self.Frame1)
         self.Button3.pack(side=LEFT)
         self.Button3.configure(activebackground="#14d954")
-        self.Button3.configure(text='''New Run''')
-        self.Button3.configure(width=87)
+        self.Button3.configure(text='''Run''')
+        self.Button3.configure(width=20)
         self.Button3.configure(command=self.dispatch_new_run)
+        
+        self.Button4 = Button(self.Frame1)
+        self.Button4.pack(side=LEFT)
+        self.Button4.configure(activebackground="#14d954")
+        self.Button4.configure(text='''Log''')
+        self.Button4.configure(width=20)
+        self.Button4.configure(command=self.log.view_log)
 
         # The frame in which training instances sit
         self.Frame2 = Frame(master)
@@ -224,22 +279,26 @@ class TTrainer():
         
         self._place_new_instance()
         
+        
+        
     def _place_new_instance(self):
         self.created_trainers+=1
         self.available_instance = TrainingInstance(self.Frame2, self, self.created_trainers)
         self.available_instance.pack()
         self.training_instances[self.created_trainers] = self.available_instance
+        self.log.update("Created new training instance " + str(self.created_trainers))
 
     def dispatch_new_run(self):
         # Make a call to training instance . run or something like that
         # Do this for the currently pointed to training instance
         self.available_instance.dispatch_instance()
         self._place_new_instance()
-        pass
+        self.log.update("Dispatched new training instance " + str(self.created_trainers))
     
-    def delete_training_run(self, instance):
-        self.training_instances[instance].destroy()
-        del self.training_instances[instance]
+    def delete_training_run(self, instance_id):
+        self.training_instances[instance_id].destroy()
+        del self.training_instances[instance_id]
+        self.log.update("Deleted training instance " + str(instance_id))
 
 
 

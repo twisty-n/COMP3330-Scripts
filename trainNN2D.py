@@ -14,6 +14,9 @@ import matplotlib.pyplot as plt
 
 # This must point to a python installed with all of the various required libs
 PYTHON_EXE = '/home/tnewmann/anaconda/bin/python2.7'
+RUN_MASTER_DIR = 'dumps/run:'
+IMG_SUBDIR = '/img'
+DUMP_SUBDIR = '/nn'
 
 
 def now():
@@ -164,7 +167,7 @@ def create_interface(nn, error, files_made, dump_path):
     worker.start()
 
 
-def train(activation_stream=False, print_iters=0):
+def train(activation_stream=False, print_iters=0, path=None):
     """
     Trains a neural network
     """
@@ -181,9 +184,18 @@ def train(activation_stream=False, print_iters=0):
 
     stream = activation_stream
     print_val = print_iters
-    run_path = 'dumps/run:' + now()
-    img_path = run_path + '/img'
-    dump_path = run_path + '/nn'
+    
+    if path is None:
+        run_path = RUN_MASTER_DIR + now()
+    else:
+        run_path = path
+    
+    img_path = run_path + IMG_SUBDIR
+    dump_path = run_path + DUMP_SUBDIR
+    os.mkdir(run_path)
+    os.mkdir(img_path)
+    os.mkdir(dump_path)
+    os.mkdir(dump_path+'/params')
 
     params = {
         'Learning Rate: ':          str(learning_rate),
@@ -211,10 +223,7 @@ def train(activation_stream=False, print_iters=0):
     files_made = ['herp']
 
     # Create this training runs run directory
-    os.mkdir(run_path)
-    os.mkdir(img_path)
-    os.mkdir(dump_path)
-    os.mkdir(dump_path+'/params')
+
 
     #create_interface(nn, error, files_made, dump_path)
     
@@ -249,6 +258,20 @@ def train(activation_stream=False, print_iters=0):
 
 # Treat this as a stand alone program
 if __name__ == "__main__":
+    """
+    ARGUMENT FORMAT:
+            Blank: Run as a standalone script
+      ELSE
+      
+          ARG 1: The directory that this training one will take place in
+          ARG 2: Learning Rate
+          ARG 3: Learning Decay
+          ARG 4: Momentum
+          ARG 5: Batch Learning
+          ARG 6: Hiddden Layers
+          ARG 7: Hidden Class
+          ARG 8: Output Class
+    """
     if len(sys.argv) == 1:
         train(True, 50)
     else:
