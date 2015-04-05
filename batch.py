@@ -53,7 +53,7 @@ class Command:
     def add_arg(self, arg, wrap_quotes=False):
         arg=str(arg)
         if wrap_quotes:
-            arg = "/'" + arg + "/'"
+            arg = "\'" + arg + "\'"
         self.args.append(arg)
     
     def add_args(self, args):
@@ -83,6 +83,7 @@ class Command:
 def monitor(process, iter_u, error_u):
     # While the process isn't dead, update the boxes
     while process.poll() is None:
+        print process.stdout.readline()
         update = process.stdout.readline().split(",")
         iter_u.delete(0, END)
         iter_u.insert(0, upadte[0])
@@ -91,12 +92,13 @@ def monitor(process, iter_u, error_u):
     
     
 def dispatch_monitor(process, iter_u, error_u):
-    worker = threading.Thread(target=create_window, 
+    worker = threading.Thread(target=monitor, 
                               kwargs={'process': process,
                                   'iter_u': iter_u,
                                   'error_u': error_u})
     worker.setDaemon(True)
     worker.start()
+    print "Created new monitoring thread"
     
    
 class Log:
@@ -289,8 +291,9 @@ class TrainingInstance(Frame):
         self.state = InstanceStates.RUNNING
         
         command = Command(trainNN2D.PYTHON_EXE)
+        command.add_arg(trainNN2D.SCRIPT_NAME)
         self._run_dir = trainNN2D.RUN_MASTER_DIR + trainNN2D.now()
-        command.add_arg(run_dir, wrap_quotes=True)
+        command.add_arg(self._run_dir, wrap_quotes=True)
         args = []
         args.append((self.Entry1.get(), False))
         args.append((self.Entry2.get(), False))
@@ -302,7 +305,8 @@ class TrainingInstance(Frame):
         args.append((self.Entry8.get(), False))
         command.add_args(args)
         
-        self._process = command.execute(pipeout=True)
+        self._owner.log.update("Preparing to execute command: "+command.stringify())
+        self._process = command.execute(pipeout=False)
         dispatch_monitor(self._process, self.Entry8, self.Label11)
         return True
         
@@ -319,7 +323,7 @@ class TrainingInstance(Frame):
             self.Button2.configure(text='Close')
             self.Button2.configure(command=lambda: self._owner.delete_training_run(self._id))
             # Kill the subprocess here
-            os.kill(self._process.pid, signal.SIGNINT)
+            os.kill(self._process.pid, signal.SIGINT)
 
 class TTrainer():
     def __init__(self, master=None):

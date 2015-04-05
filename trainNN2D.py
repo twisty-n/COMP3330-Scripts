@@ -11,6 +11,7 @@ import Tkinter
 from pybrain.tools.shortcuts import buildNetwork
 from pybrain.supervised.trainers import BackpropTrainer
 import matplotlib.pyplot as plt
+import sys
 
 # This must point to a python installed with all of the various required libs
 PYTHON_EXE = '/home/tnewmann/anaconda/bin/python2.7'
@@ -23,6 +24,8 @@ DEFAULT_OUT = 'LinearLayer'
 
 DEFAULT_IMG_PRINT_COUNT = 50
 DEFAULT_IMG_PRINT_CHOICE = True
+
+SCRIPT_NAME = 'trainNN2D.py'
 
 IS_STANDALONE = True
 
@@ -176,12 +179,19 @@ def create_interface(nn, error, files_made, dump_path):
 
 
 # TODO: define an output function
+def output(i, error_val):
+    if IS_STANDALONE:
+         print "Iteration " + str(i) + "\tError: " + str(error_val)
+    else:
+         print str(i)+","+str(error_val)
 
-def train(activation_stream=False, print_iters=0, path=None):
+
+def train(activation_stream=False, print_iters=0, path=None, params=None):
     """
     Trains a neural network
     """
     # training parameters for neural networks:
+    # Used when this script is standalone
     learning_rate = 0.1                 # set in [0,1]
     learning_decay = 1                  # try 0.999, set in [0.9,1]
     momentum = 0.05                     # set in [0,0.5]
@@ -195,6 +205,7 @@ def train(activation_stream=False, print_iters=0, path=None):
     stream = activation_stream
     print_val = print_iters
     
+    # Used when called as a process
     if path is None:
         run_path = RUN_MASTER_DIR + now()
     else:
@@ -207,7 +218,7 @@ def train(activation_stream=False, print_iters=0, path=None):
     os.mkdir(dump_path)
     os.mkdir(dump_path+'/params')
 
-    params = {
+    p_params = {
         'Learning Rate: ':          str(learning_rate),
         'Learning Decay:':          str(learning_decay),
         'Momentum: ':                 str(momentum),
@@ -219,24 +230,48 @@ def train(activation_stream=False, print_iters=0, path=None):
         'Out Class: ':              str(out_class).split('.')[-1]
     }
 
-    data, keys = loadCSV("smile.csv")
-    nn = buildNetwork(*([data.indim]+hidden_layers+[data.outdim]),
-                      outclass=out_class, hiddenclass=hidden_class)
 
-    trainer = BackpropTrainer(nn, data, learningrate=learning_rate,
-                              momentum=momentum,
-                              lrdecay=learning_decay,
-                              batchlearning=batch_learning)
+    # Will need to make changes here when implementing for another dataset
+    data, keys = loadCSV("smile.csv")
+
+    if IS_STANDALONE:
+        
+        nn = buildNetwork(*([data.indim]+hidden_layers+[data.outdim]),
+                      outclass=out_class, hiddenclass=hidden_class)
+                      
+        trainer = BackpropTrainer(nn, data, learningrate=learning_rate,
+                                  momentum=momentum,
+                                  lrdecay=learning_decay,
+                                  batchlearning=batch_learning)
+    else:
+        #Transform the params required inline
+        iterations = int(params['iterations'])
+        hidden_layers_str = params['hidden_layer'].split(",")
+        hidden_layers_int = []
+        for l in hidden_layers_str:
+            hidden_layers_int.append(int(l))
+        print hidden_layers
+        batch_learning = eval(params['batch'])
+        h_lay = {
+            'SigmoidLayer': SigmoidLayer
+        }
+        o_lay = {
+            'LinearLayer':LinearLayer        
+        }
+        hidden_class = h_lay[params['hidden_class']]
+        out_class = o_lay[params['out_class']]
+        
+        nn = buildNetwork(*([data.indim]+hidden_layers+[data.outdim]),
+                      outclass=out_class, hiddenclass=hidden_class)
+                      
+        trainer = BackpropTrainer(nn, data, learningrate=float(params["learning_rate"]),
+                                  momentum=float(params["momentum"]),
+                                  lrdecay=float(params["learning_decay"]),
+                                  batchlearning=batch_learning)
 
     error = []
     validation_error = []
     files_made = ['herp']
-
-    # Create this training runs run directory
-
-
-    #create_interface(nn, error, files_made, dump_path)
-    
 
     print "Beginning Training run..."
 
@@ -245,7 +280,7 @@ def train(activation_stream=False, print_iters=0, path=None):
 
             for i in xrange(iterations):
                 error_val = trainer.train()
-                print "Iteration " + str(i) + "\tError: " + str(error_val)
+                output(i, error_val)
                 error.append(error_val)
 
                 # check which iteration we're up to, dump the network
@@ -263,7 +298,7 @@ def train(activation_stream=False, print_iters=0, path=None):
         print "Exception occured, performing emergency Dump!"
         # print "Error Information: " + str(e)
     finally:
-        dump(nn, files_made, dump_path, True, params)
+        dump(nn, files_made, dump_path, True, p_params)
         error_plot(error)
 
 # Treat this as a stand alone program
@@ -281,6 +316,7 @@ if __name__ == "__main__":
           ARG 6: Hidden Layers
           ARG 7: Hidden Class
           ARG 8: Output Class
+          ARG 9: Iterations
     """
     if len(sys.argv) == 1:
         train(DEFAULT_IMG_PRINT_CHOICE, DEFAULT_IMG_PRINT_COUNT)
@@ -288,3 +324,20 @@ if __name__ == "__main__":
         # Being called as part of a batch routine, so we need to process the
         # args
         IS_STANDALONE = False
+        run_dir = sys.argv[1]
+        params = {
+            'learning_rate': sys.argv[2],
+            'learning_decay': sys.argv[3],
+            'momentum': sys.argv[4],
+            'batch': sys.argv[5],
+            'hidden_layer': sys.argv[6],
+            'hidden_class': sys.argv[7],
+            'out_class': sys.argv[8],
+            'iterations': sys.argv[9]
+        }
+        train(DEFAULT_IMG_PRINT_CHOICE, DEFAULT_IMG_PRINT_COUNT, run_dir, params)
+        
+        
+        
+        
+        
