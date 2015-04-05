@@ -33,11 +33,17 @@ def load_dump(file_path, action=plt.show):
     plt.close()
 
 if __name__ == '__main__':
+    """
+    
+    Arg 1: The location of the NN to open
+    Arg 2: A flag indicating whether to save the plot as a picture -s
+    Arg 3: The filepath to save the plot
+    
+    """
     # The first argument is always the script
     if len(sys.argv) == 1:
     
         # This is the stand alone version
-    
         root = Tkinter.Tk()
         root.withdraw()
     
@@ -47,13 +53,19 @@ if __name__ == '__main__':
         load_dump(file_path)
     
     else:
-        # We are being called with a specific filename
-    
-        # we will need to parse the arguments and see if we also want to save a
-        # pic
-        # We will need to accept a location in which to do the pic save as well
-        # savefig('foo.png', bbox_inches='tight')    this will need to be passed to
-        # load
-        # dump as the action
-        print "Opening dump: " + sys.argv[1]
-        load_dump(sys.argv[1])
+        # Check arguments to find the control path
+        SAVE        = '-s'
+        nn_path     = sys.argv[1]   
+        do_save     = sys.argv[2]
+        img_path    = sys.argv[3]
+        
+        print str(sys.argv)
+        
+        if do_save == SAVE:
+            load_dump(nn_path, lambda: plt.savefig(img_path, bbox_inches='tight'))
+        else:
+            # Just display the image
+            load_dump(nn_path)
+        
+
+

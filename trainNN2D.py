@@ -94,7 +94,6 @@ def dump(neural_net, files_made, dump_dir, print_params=False, params=None):
     pk_d = dump_dir + '/NN' + dt + '.pkl'
     files_made.append(pk_d)
     pickle.dump(neural_net, open(pk_d, 'wb'))
-    print "Inline dump made!"
     # Also allow paramater printout
     if print_params:
         param_file = open(dump_dir + '/params/PARAM_DUMP_'+dt+'.txt', "w")
@@ -131,7 +130,7 @@ def create_window(nn, error, files_list, dump_dir):
     win.mainloop()
 
 
-def save_activation(files_made, img_path, dumper):
+def save_activation(files_made, img_path, dumper, defer=False):
     # TODO: Fix this up !
     """
     Saves a neural network activation plot as a picture
@@ -141,18 +140,17 @@ def save_activation(files_made, img_path, dumper):
         print "Error no Dumper specified!"
         return
     dumper()
-    img_name = now()
-    loader(files_made[-1], lambda: plt.savefig(img_path + '/AP-'+img_name+'.png', 
+    img_name = img_path + '/AP-'+now()+'.png'
+    if not defer:
+        loader(files_made[-1], lambda: plt.savefig(img_name, 
                                       bbox_inches='tight'))
-                                      
-def dispatch_save_activation(files_made, img_path, dumper):
-    worker = threading.Thread(target=save_activation, kwargs={
-                    "files_made":files_made, 
-                    "img_path":img_path, 
-                    "dumper":dumper})
-    worker.setDaemon(True)
-    worker.start()
-    
+    else:
+        shell_string = PYTHON_EXE + ' graphNN2D.py \'' + files_made[-1] + '\''
+        shell_string += ' -s '
+        shell_string += '\''+img_name+'\''
+        print shell_string
+        subprocess.Popen(shell_string, shell=True)
+                                       
     
 def create_interface(nn, error, files_made, dump_path):
     """
@@ -234,10 +232,10 @@ def train(activation_stream=False, print_iters=0):
 
                 # check which iteration we're up to, dump the network
                 if stream and (i % print_val == 0):
-                    # Use threading and signals here?
                     save_activation(files_made, 
                                     img_path,
-                                    lambda: dump(nn, files_made, dump_path))
+                                    lambda: dump(nn, files_made, dump_path),
+                                    True)
         else:
             error, validation_error = trainer.trainUntilConvergence(
                                 validationProportion=validation_proportion)
@@ -245,7 +243,7 @@ def train(activation_stream=False, print_iters=0):
         print "Training Complete.... Printing Error Plot"
     except Exception as e:
         print "Exception occured, performing emergency Dump!"
-        print "Error Information: " + str(e)
+        # print "Error Information: " + str(e)
     finally:
         dump(nn, files_made, dump_path, True, params)
         error_plot(error)
