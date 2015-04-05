@@ -59,8 +59,6 @@ if __name__ == '__main__':
         do_save     = sys.argv[2]
         img_path    = sys.argv[3]
         
-        print str(sys.argv)
-        
         if do_save == SAVE:
             load_dump(nn_path, lambda: plt.savefig(img_path, bbox_inches='tight'))
         else:

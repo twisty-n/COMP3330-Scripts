@@ -250,7 +250,6 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
         hidden_layers_int = []
         for l in hidden_layers_str:
             hidden_layers_int.append(int(l))
-        print hidden_layers
         batch_learning = eval(params['batch'])
         h_lay = {
             'SigmoidLayer': SigmoidLayer

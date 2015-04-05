@@ -83,13 +83,11 @@ class Command:
 def monitor(process, iter_u, error_u):
     # While the process isn't dead, update the boxes
     while process.poll() is None:
-        print process.stdout.readline()
         update = process.stdout.readline().split(",")
         iter_u.delete(0, END)
-        iter_u.insert(0, upadte[0])
+        iter_u.insert(0, update[0])
         error_u.configure(text=update[1])
         
-    
     
 def dispatch_monitor(process, iter_u, error_u):
     worker = threading.Thread(target=monitor, 
@@ -306,7 +304,7 @@ class TrainingInstance(Frame):
         command.add_args(args)
         
         self._owner.log.update("Preparing to execute command: "+command.stringify())
-        self._process = command.execute(pipeout=False)
+        self._process = command.execute(pipeout=True)
         dispatch_monitor(self._process, self.Entry8, self.Label11)
         return True
         
