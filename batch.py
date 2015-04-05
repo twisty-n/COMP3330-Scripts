@@ -1,7 +1,10 @@
 import sys
-from trainNN2D import PYTHON_EXE as PY_PATH
 from Tkinter import Toplevel
 import trainNN2D
+import subprocess
+import os
+import signal
+
 try:
     from Tkinter import *
 except ImportError:
@@ -41,7 +44,60 @@ class InstanceStates:
     PENDING = 1
     RUNNING = 2
     STOPPED = 3
-   
+    
+class Command:
+    def __init__(self, script):
+        self.args = []
+        self.args.append(script)
+    
+    def add_arg(self, arg, wrap_quotes=False):
+        arg=str(arg)
+        if wrap_quotes:
+            arg = "/'" + arg + "/'"
+        self.args.append(arg)
+    
+    def add_args(self, args):
+        """
+        Add multiple arguments to a command
+        Argument must be a list of tuples
+        t[0] is the command,
+        t[1] is a bool of whether it is to be wrapped in quotes or not
+        """
+        for arg in args:
+            self.add_arg(arg[0], wrap_quotes=arg[1])
+    
+    def stringify(self):
+        command_string = ""
+        for arg in self.args:
+            command_string += (arg + " ")
+        return command_string
+    
+    def execute(self, pipeout=False):
+        if pipeout:
+            return subprocess.Popen(self.stringify(),
+                                stdout=subprocess.PIPE,    
+                                shell=True)
+        return subprocess.Popen(self.stringify(),
+                                shell=True)
+                                
+def monitor(process, iter_u, error_u):
+    # While the process isn't dead, update the boxes
+    while process.poll() is None:
+        update = process.stdout.readline().split(",")
+        iter_u.delete(0, END)
+        iter_u.insert(0, upadte[0])
+        error_u.configure(text=update[1])
+        
+    
+    
+def dispatch_monitor(process, iter_u, error_u):
+    worker = threading.Thread(target=create_window, 
+                              kwargs={'process': process,
+                                  'iter_u': iter_u,
+                                  'error_u': error_u})
+    worker.setDaemon(True)
+    worker.start()
+    
    
 class Log:
     def __init__(self):
@@ -76,52 +132,64 @@ class Log:
 class TrainingInstance(Frame):
     def __init__(self, parent, owner, _id_):
         Frame.__init__(self, parent)
+        self._entries = []
         self.Entry1 = Entry(self)
         self.Entry1.pack(side=LEFT)
         self.Entry1.configure(background="white")
         self.Entry1.configure(font="TkFixedFont")
         self.Entry1.configure(width=11)
+        self._entries.append(self.Entry1)
 
         self.Entry2 = Entry(self)
         self.Entry2.pack(side=LEFT)
         self.Entry2.configure(background="white")
         self.Entry2.configure(font="TkFixedFont")
         self.Entry2.configure(width=11)
+        self._entries.append(self.Entry2)
 
         self.Entry3 = Entry(self)
         self.Entry3.pack(side=LEFT)
         self.Entry3.configure(background="white")
         self.Entry3.configure(font="TkFixedFont")
         self.Entry3.configure(width=11)
+        self._entries.append(self.Entry3)
 
         self.Entry4 = Entry(self)
         self.Entry4.pack(side=LEFT)
         self.Entry4.configure(background="white")
         self.Entry4.configure(font="TkFixedFont")
         self.Entry4.configure(width=11)
+        self._entries.append(self.Entry4)
 
         self.Entry5 = Entry(self)
         self.Entry5.pack(side=LEFT)
         self.Entry5.configure(background="white")
         self.Entry5.configure(font="TkFixedFont")
         self.Entry5.configure(width=12)
+        self._entries.append(self.Entry4)
 
         self.Entry6 = Entry(self)
         self.Entry6.pack(side=LEFT)
         self.Entry6.configure(background="white")
         self.Entry6.configure(font="TkFixedFont")
         self.Entry6.configure(width=11)
+        self.Entry6.insert(0, trainNN2D.DEFAULT_HIDDEN)
+        self._entries.append(self.Entry6)
 
         self.Entry7 = Entry(self)
         self.Entry7.pack(side=LEFT)
         self.Entry7.configure(background="white")
         self.Entry7.configure(font="TkFixedFont")
         self.Entry7.configure(width=11)
+        self.Entry7.insert(0, trainNN2D.DEFAULT_OUT)
+        self._entries.append(self.Entry7)
 
-        self.Label8 = Label(self)
-        self.Label8.pack(side=LEFT)
-        self.Label8.configure(text='''0''')
-        self.Label8.configure(width=5)
+        self.Entry8 = Entry(self)
+        self.Entry8.pack(side=LEFT)
+        self.Entry8.configure(background="white")
+        self.Entry8.configure(font="TkFixedFont")
+        self.Entry8.configure(width=5)
+        self._entries.append(self.Entry8)
 
         self.Label11 = Label(self)
         self.Label11.pack(side=LEFT)
@@ -146,8 +214,55 @@ class TrainingInstance(Frame):
         self.state = InstanceStates.PENDING
         self._owner = owner
         self._id = _id_
+        self._run_dir = None
+        self._process = None
 
-  
+    def valid_params(self):
+        # Eww
+        valid = True
+        for entry in self._entries:
+            entry.configure(bg="white")
+        if self.Entry1.get() is "" or float(self.Entry1.get()) <= float(0) or float(self.Entry1.get()) > float(1):
+            self.Entry1.configure(bg="orange")
+            valid = valid and False
+            self._owner.log.update("Error in Lrate: set in [0->1]")
+        if self.Entry2.get() is "" or float(self.Entry2.get()) <= float(0.9) or float(self.Entry2.get()) > float(1):
+            self.Entry2.configure(bg="orange")
+            valid = valid and False
+            self._owner.log.update("Error in Ldecayset in [0.9->1]")
+        if self.Entry3.get() is ""or float(self.Entry3.get()) <= float(0) or float(self.Entry3.get()) >= float(0.5):
+            self.Entry3.configure(bg="orange")
+            valid = valid and False
+            self._owner.log.update("Error in momentum set in [0,0.5]")
+            
+        if self.Entry4.get() is "": #or str(self.Entry4.get()) != str(True) or str(self.Entry4.get()) != str(False):
+            self._owner.log.update("val is " + str(self.Entry4.get()))            
+            self.Entry4.configure(bg="orange")
+            valid = valid and False
+            self._owner.log.update("Error in B-learn. Must be True or False")
+        if self.Entry5.get() is "" or " " in self.Entry5.get():
+            self.Entry5.configure(bg="orange")
+            valid = valid and False
+            self._owner.log.update("Error in Hlayers. Must not contain spaces")
+        if self.Entry6.get() is "":
+            self.Entry6.configure(bg="orange")
+            valid = valid and False
+            self._owner.log.update("Error in HClass")
+        if self.Entry7.get() is "":
+            self.Entry7.configure(bg="orange")
+            valid = valid and False
+            self._owner.log.update("Error in OClass")
+        if self.Entry8.get() is "" or self.Entry8.get() < 1:
+            self.Entry8.configure(bg="orange")
+            valid = valid and False
+            self._owner.log.update("Error in Iterations. must be in [1->~]")
+        
+        return valid
+        
+    def _dispatch_process_monitor():
+        """
+        Updates the error and the iterations count for this pane
+        """
     
     def dispatch_instance(self):
         """
@@ -155,7 +270,7 @@ class TrainingInstance(Frame):
                 Blank: Run as a standalone script
           ELSE
           
-              ARG 1: The directory that this training one will take place in
+              ARG 1: The directory that this training run will take place in
               ARG 2: Learning Rate
               ARG 3: Learning Decay
               ARG 4: Momentum
@@ -163,18 +278,38 @@ class TrainingInstance(Frame):
               ARG 6: Hiddden Layers
               ARG 7: Hidden Class
               ARG 8: Output Class
+              ARG 9: Iterations
         """  
         # Make a call to psubprocess in here
+
+        if not self.valid_params():
+            return False
+        
         self.configure(bg='green')
         self.state = InstanceStates.RUNNING
         
-        #create the run directory
-        run_dir = trainNN2D.RUN_MASTER_DIR + trainNN2D.now()
-        run_dir = "/'" + run_dir +"/'"
-        self._owner.log.update("Running command "+"")
+        command = Command(trainNN2D.PYTHON_EXE)
+        self._run_dir = trainNN2D.RUN_MASTER_DIR + trainNN2D.now()
+        command.add_arg(run_dir, wrap_quotes=True)
+        args = []
+        args.append((self.Entry1.get(), False))
+        args.append((self.Entry2.get(), False))
+        args.append((self.Entry3.get(), False))
+        args.append((self.Entry4.get(), False))
+        args.append((self.Entry5.get(), False))
+        args.append((self.Entry6.get(), False))
+        args.append((self.Entry7.get(), False))
+        args.append((self.Entry8.get(), False))
+        command.add_args(args)
+        
+        self._process = command.execute(pipeout=True)
+        dispatch_monitor(self._process, self.Entry8, self.Label11)
+        return True
         
         
     def open_view_pane(self):
+        # Will create a TopLevel window that monitors a folder
+        # Updates the pane with the latest image that is put in the folder        
         pass
     
     def kill_instance(self):
@@ -184,7 +319,7 @@ class TrainingInstance(Frame):
             self.Button2.configure(text='Close')
             self.Button2.configure(command=lambda: self._owner.delete_training_run(self._id))
             # Kill the subprocess here
-
+            os.kill(self._process.pid, signal.SIGNINT)
 
 class TTrainer():
     def __init__(self, master=None):
@@ -291,7 +426,9 @@ class TTrainer():
     def dispatch_new_run(self):
         # Make a call to training instance . run or something like that
         # Do this for the currently pointed to training instance
-        self.available_instance.dispatch_instance()
+        running = self.available_instance.dispatch_instance()
+        if not running:
+            return
         self._place_new_instance()
         self.log.update("Dispatched new training instance " + str(self.created_trainers))
     

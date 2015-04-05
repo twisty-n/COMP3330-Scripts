@@ -18,6 +18,14 @@ RUN_MASTER_DIR = 'dumps/run:'
 IMG_SUBDIR = '/img'
 DUMP_SUBDIR = '/nn'
 
+DEFAULT_HIDDEN = 'SigmoidLayer'
+DEFAULT_OUT = 'LinearLayer'
+
+DEFAULT_IMG_PRINT_COUNT = 50
+DEFAULT_IMG_PRINT_CHOICE = True
+
+IS_STANDALONE = True
+
 
 def now():
     """
@@ -167,6 +175,8 @@ def create_interface(nn, error, files_made, dump_path):
     worker.start()
 
 
+# TODO: define an output function
+
 def train(activation_stream=False, print_iters=0, path=None):
     """
     Trains a neural network
@@ -268,13 +278,13 @@ if __name__ == "__main__":
           ARG 3: Learning Decay
           ARG 4: Momentum
           ARG 5: Batch Learning
-          ARG 6: Hiddden Layers
+          ARG 6: Hidden Layers
           ARG 7: Hidden Class
           ARG 8: Output Class
     """
     if len(sys.argv) == 1:
-        train(True, 50)
+        train(DEFAULT_IMG_PRINT_CHOICE, DEFAULT_IMG_PRINT_COUNT)
     else:
         # Being called as part of a batch routine, so we need to process the
         # args
-        pass
+        IS_STANDALONE = False
