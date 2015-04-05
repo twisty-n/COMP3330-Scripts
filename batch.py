@@ -1,4 +1,5 @@
 import sys
+from trainNN2D import PYTHON_EXE as p_path
 
 try:
     from Tkinter import *
@@ -40,9 +41,16 @@ def destroy_New_Toplevel_1():
     global w
     w.destroy()
     w = None
+
+
+class InstanceStates:
+    PENDING = 1
+    RUNNING = 2
+    STOPPED = 3
+    
     
 class TrainingInstance(Frame):
-    def __init__(self, parent):
+    def __init__(self, parent, owner, _id_):
         Frame.__init__(self, parent)
         self.Entry1 = Entry(self)
         self.Entry1.pack(side=LEFT)
@@ -88,12 +96,12 @@ class TrainingInstance(Frame):
 
         self.Label8 = Label(self)
         self.Label8.pack(side=LEFT)
-        self.Label8.configure(text='''Label''')
+        self.Label8.configure(text='''0''')
         self.Label8.configure(width=5)
 
         self.Label11 = Label(self)
         self.Label11.pack(side=LEFT)
-        self.Label11.configure(text='''Label''')
+        self.Label11.configure(text='''0''')
         self.Label11.configure(width=10)
 
         self.Button1 = Button(self)
@@ -108,6 +116,25 @@ class TrainingInstance(Frame):
         self.Button2.configure(activeforeground="white")
         self.Button2.configure(text='''Kill''')
         self.Button2.configure(width=5)
+        self.Button2.configure(command=self.kill_instance)
+        
+        # Actual instance vars
+        self.state = InstanceStates.PENDING
+        self._owner = owner
+        self._id = _id_
+    
+    def dispatch_instance(self):
+        # Make a call to psubprocess in here
+        self.state = InstanceStates.RUNNING
+        
+    def open_view_pane(self):
+        pass
+    
+    def kill_instance(self):
+        if not self.state == InstanceStates.PENDING:
+            self.state = InstanceStates.STOPPED
+            self.Button2.configure(text='Close')
+            self.Button2.configure(command=lambda: self._owner.delete_training_run(self._id))
 
 
 class TTrainer():
@@ -197,19 +224,20 @@ class TTrainer():
         
     def _place_new_instance(self):
         self.created_trainers+=1
-        self.available_instance = TrainingInstance(self.Frame2)
+        self.available_instance = TrainingInstance(self.Frame2, self, self.created_trainers)
         self.available_instance.pack()
         self.training_instances[self.created_trainers] = self.available_instance
 
     def dispatch_new_run(self):
         # Make a call to training instance . run or something like that
         # Do this for the currently pointed to training instance
+        self.available_instance.dispatch_instance()
         self._place_new_instance()
         pass
     
     def delete_training_run(self, instance):
         self.training_instances[instance].destroy()
-        del training_instances[instance]
+        del self.training_instances[instance]
 
 
 
