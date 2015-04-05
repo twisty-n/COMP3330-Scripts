@@ -148,7 +148,6 @@ def save_activation(files_made, img_path, dumper, defer=False):
         shell_string = PYTHON_EXE + ' graphNN2D.py \'' + files_made[-1] + '\''
         shell_string += ' -s '
         shell_string += '\''+img_name+'\''
-        print shell_string
         subprocess.Popen(shell_string, shell=True)
                                        
     
@@ -250,4 +249,5 @@ def train(activation_stream=False, print_iters=0):
 
 # Treat this as a stand alone program
 if __name__ == "__main__":
-    train(True, 50)
+    if len(sys.argv) == 1:
+        train(True, 50)
