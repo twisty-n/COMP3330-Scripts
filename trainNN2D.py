@@ -30,6 +30,7 @@ SCRIPT_NAME = 'trainNN2D.py'
 IS_STANDALONE = True
 
 
+
 def now():
     """
     Returns the current date and time as a string
@@ -97,7 +98,7 @@ def error_plot(error_list, path=None):
     plot.plot(error_list, 'r')
     plot.ylabel("Training Error")
     plot.xlabel("Training Steps")
-    if IS_STANDALONE:
+    if IS_STANDALONE and DEFAULT_IMG_PRINT_CHOICE is False:
         plot.show()
     else:
         # Save the image to the path

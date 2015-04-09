@@ -82,27 +82,20 @@ class Command:
         return subprocess.Popen(self.stringify(),
                                 shell=True)
        
-def update(update, iter_u, error_u):
-    print "update recieved"
-    iter_u.delete(0, END)
-    iter_u.insert(0, update[0])
-    error_u.configure(text=update[1])
 
                          
 def monitor(instance):
-    # While the process isn't dead, update the boxes
     while instance._process.poll() is None:
-        update = instance._process.stdout.readline()
-        update = update.split(",")
-        update[1][:-1]
-        update = instance._process.stdout.readline().split(",")
-        instance.iter_val = update[0]
-        instance.error_val = update[1]
-
-        # Instead of using event generation. Prepare a Q. And then update it using the after callback
-        # in the main thread
-        
-        instance._owner._master.event_generate("<<"+str(instance._id)+"update>>", when="tail")
+        try:
+            update = instance._process.stdout.readline()
+            if update is '':
+                return
+            iter_val = update[0]
+            error_val = update[:-1]
+            instance._owner.event_queue.append(lambda: instance.update(iter_val, error_val))
+        except:
+            pass # BAD PROGRAMMING!
+    instance._owner.event_queue.append(lambda: instance.kill_instance())
               
     
 def dispatch_monitor(instance):
@@ -279,6 +272,7 @@ class TrainingInstance(Frame):
         """
         Updates the error and the iterations count for this pane
         """
+        pass
     
     def dispatch_instance(self):
         """
@@ -322,15 +316,14 @@ class TrainingInstance(Frame):
         self._owner.log.update("Preparing to execute command: "+command.stringify())
         self._process = command.execute(pipeout=True)
 
-        # Set up our event bindings
-
-        # Set up a global event queue instead
-        self._owner._master.bind_all("<<"+str(self._id)+"update>>", lambda: update((self.iter_val, self.error_val),
-                                                                        self.Entry8,
-                                                                        self.Label11))        
-        
         dispatch_monitor(self)
         return True
+        
+    def update(self, iter_val, error_val):
+        print "Updating"
+        self.Entry8.delete(0, END)
+        self.Entry8.insert(0, str(iter_val))
+        self.Label11.configure(text=str(error_val))
         
         
     def open_view_pane(self):
@@ -345,7 +338,11 @@ class TrainingInstance(Frame):
             self.Button2.configure(text='Close')
             self.Button2.configure(command=lambda: self._owner.delete_training_run(self._id))
             # Kill the subprocess here
-            os.kill(self._process.pid, signal.SIGINT)
+            try:
+                os.kill(self._process.pid, signal.SIGINT)
+            except:
+                # If we can't kill it, its already dead!
+                pass
 
 class TTrainer():
     def __init__(self, master=None):
@@ -442,7 +439,14 @@ class TTrainer():
         
         self._place_new_instance()
         
+        self.event_queue = []      
+        self._master.after(50, self._process_events)
         
+    def _process_events(self):
+        for event in self.event_queue:
+            event()
+            self.event_queue.pop()
+        self._master.after(50, self._process_events)
         
     def _place_new_instance(self):
         self.created_trainers+=1
@@ -465,9 +469,10 @@ class TTrainer():
         del self.training_instances[instance_id]
         self.log.update("Deleted training instance " + str(instance_id))
         
-    def kill_children():
-        for id, trainer in self.training_instances.iteritems():
-            os.kill(trainer._process.pid, signal.SIGTERM)
+    def kill_children(self):
+        for id, trainee in self.training_instances.iteritems():
+            if trainee.state is not InstanceStates.PENDING or trainee.state is not InstanceStates.STOPPED:
+                os.kill(trainee._process.pid, signal.SIGTERM)
 
 
 
