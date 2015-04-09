@@ -18,7 +18,7 @@ def vp_start_gui():
     global val, w, root
     root = Tk()
     root.title('Tristans Trainer')
-    geom = "704x464+508+323"
+    geom = "715x464+508+323"
     root.geometry(geom)
     w = TTrainer (root)
     root.mainloop()
@@ -88,10 +88,11 @@ def monitor(instance):
     while instance._process.poll() is None:
         try:
             update = instance._process.stdout.readline()
-            if update is '':
+            if update is '' or update is None:
                 return
+            update = update.split(',')
             iter_val = update[0]
-            error_val = update[:-1]
+            error_val = update[1][:-1]
             instance._owner.event_queue.append(lambda: instance.update(iter_val, error_val))
         except:
             pass # BAD PROGRAMMING!
@@ -143,21 +144,21 @@ class TrainingInstance(Frame):
         self.Entry1.pack(side=LEFT)
         self.Entry1.configure(background="white")
         self.Entry1.configure(font="TkFixedFont")
-        self.Entry1.configure(width=11)
+        self.Entry1.configure(width=9)
         self._entries.append(self.Entry1)
 
         self.Entry2 = Entry(self)
         self.Entry2.pack(side=LEFT)
         self.Entry2.configure(background="white")
         self.Entry2.configure(font="TkFixedFont")
-        self.Entry2.configure(width=11)
+        self.Entry2.configure(width=9)
         self._entries.append(self.Entry2)
 
         self.Entry3 = Entry(self)
         self.Entry3.pack(side=LEFT)
         self.Entry3.configure(background="white")
         self.Entry3.configure(font="TkFixedFont")
-        self.Entry3.configure(width=11)
+        self.Entry3.configure(width=9)
         self._entries.append(self.Entry3)
 
         self.Entry4 = Entry(self)
@@ -194,7 +195,7 @@ class TrainingInstance(Frame):
         self.Entry8.pack(side=LEFT)
         self.Entry8.configure(background="white")
         self.Entry8.configure(font="TkFixedFont")
-        self.Entry8.configure(width=5)
+        self.Entry8.configure(width=8)
         self._entries.append(self.Entry8)
 
         self.Label11 = Label(self)
@@ -320,9 +321,8 @@ class TrainingInstance(Frame):
         return True
         
     def update(self, iter_val, error_val):
-        print "Updating"
         self.Entry8.delete(0, END)
-        self.Entry8.insert(0, str(iter_val))
+        self.Entry8.insert(0, iter_val)
         self.Label11.configure(text=str(error_val))
         
         
@@ -369,18 +369,18 @@ class TTrainer():
         self.Label1.pack(side=LEFT)
         self.Label1.configure(cursor="fleur")
         self.Label1.configure(text='''L-Rate''')
-        self.Label1.configure(width=11)
+        self.Label1.configure(width=9)
 
         self.Label2 = Label(self.Frame1)
         self.Label2.pack(side=LEFT)
         self.Label2.configure(cursor="fleur")
         self.Label2.configure(text='''L-Decay''')
-        self.Label2.configure(width=11)
+        self.Label2.configure(width=10)
 
         self.Label3 = Label(self.Frame1)
         self.Label3.pack(side=LEFT)
         self.Label3.configure(text='''Momentum''')
-        self.Label3.configure(width=11)
+        self.Label3.configure(width=9)
 
         self.Label4 = Label(self.Frame1)
         self.Label4.pack(side=LEFT)
@@ -404,8 +404,8 @@ class TTrainer():
 
         self.Label9 = Label(self.Frame1)
         self.Label9.pack(side=LEFT)
-        self.Label9.configure(text='''It''')
-        self.Label9.configure(width=5)
+        self.Label9.configure(text='''Iteration''')
+        self.Label9.configure(width=9)
 
         self.Label10 = Label(self.Frame1)
         self.Label10.pack(side=LEFT)
@@ -472,7 +472,10 @@ class TTrainer():
     def kill_children(self):
         for id, trainee in self.training_instances.iteritems():
             if trainee.state is not InstanceStates.PENDING or trainee.state is not InstanceStates.STOPPED:
-                os.kill(trainee._process.pid, signal.SIGTERM)
+                try:
+                    os.kill(trainee._process.pid, signal.SIGTERM)
+                except:
+                    pass # The final bout of bad programming to come tonight!
 
 
 

@@ -192,10 +192,11 @@ def create_interface(nn, error, files_made, dump_path):
 
 # TODO: define an output function
 def output(i, error_val):
+
     if IS_STANDALONE:
          print "Iteration " + str(i) + "\tError: " + str(error_val)
     else:
-         print str(i)+","+str(error_val)
+        print str(i)+","+str(error_val)
 
 
 def train(activation_stream=False, print_iters=0, path=None, params=None):
