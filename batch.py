@@ -3,6 +3,7 @@ from Tkinter import Toplevel
 import trainNN2D
 import subprocess
 import os
+import threading
 import signal
 import atexit
 
@@ -82,6 +83,7 @@ class Command:
                                 shell=True)
        
 def update(update, iter_u, error_u):
+    print "update recieved"
     iter_u.delete(0, END)
     iter_u.insert(0, update[0])
     error_u.configure(text=update[1])
@@ -92,13 +94,15 @@ def monitor(instance):
     while instance._process.poll() is None:
         update = instance._process.stdout.readline()
         update = update.split(",")
-        print update[1]
-        #update[1].pop()
-        print str(update)
-        """update = instance._process.stdout.readline().split(",")
+        update[1][:-1]
+        update = instance._process.stdout.readline().split(",")
         instance.iter_val = update[0]
         instance.error_val = update[1]
-        instance._owner.event_generate("<<"+str(instance._id)+"update>>", when="tail")"""
+
+        # Instead of using event generation. Prepare a Q. And then update it using the after callback
+        # in the main thread
+        
+        instance._owner._master.event_generate("<<"+str(instance._id)+"update>>", when="tail")
               
     
 def dispatch_monitor(instance):
@@ -319,7 +323,9 @@ class TrainingInstance(Frame):
         self._process = command.execute(pipeout=True)
 
         # Set up our event bindings
-        self._owner._master.bind("<<"+str(self._id)+"update>>", lambda: update((self.iter_val, self.error_val),
+
+        # Set up a global event queue instead
+        self._owner._master.bind_all("<<"+str(self._id)+"update>>", lambda: update((self.iter_val, self.error_val),
                                                                         self.Entry8,
                                                                         self.Label11))        
         

@@ -88,12 +88,23 @@ def loadCSV(filename, multiclass=True, outputs=1, separator=','):
 
 # train the neural network
 
-def error_plot(error_list):
+def error_plot(error_list, path=None):
+    """
+    Produces and error plot, and then will either
+    print or save the plot
+    """
     import matplotlib.pyplot as plot
     plot.plot(error_list, 'r')
     plot.ylabel("Training Error")
     plot.xlabel("Training Steps")
-    plot.show()
+    if IS_STANDALONE:
+        plot.show()
+    else:
+        # Save the image to the path
+        img_name = path+"/Err_Plot.png"
+        plot.savefig(img_name, bbox_inches='tight')
+    plot.close()
+        
 
 
 def dump(neural_net, files_made, dump_dir, print_params=False, params=None):
@@ -272,7 +283,7 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
     validation_error = []
     files_made = ['herp']
 
-    print "Beginning Training run..."
+    # print "Beginning Training run..."
 
     try:
         if validation_proportion == 0. or validation_proportion == 0:
@@ -299,7 +310,7 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
         pass
     finally:
         dump(nn, files_made, dump_path, True, p_params)
-        error_plot(error)
+        error_plot(error, img_path)
 
 # Treat this as a stand alone program
 if __name__ == "__main__":
