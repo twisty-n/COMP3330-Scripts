@@ -84,7 +84,7 @@ class Command:
        
 
                          
-def monitor(instance):
+def it_monitor(instance):
     while instance._process.poll() is None:
         try:
             update = instance._process.stdout.readline()
@@ -97,13 +97,54 @@ def monitor(instance):
         except:
             pass # BAD PROGRAMMING!
     instance._owner.event_queue.append(lambda: instance.kill_instance())
+
+def img_monitor(instance, label):
+    import time
+    img_dir = instance._run_dir + trainNN2D.IMG_SUBDIR
+    import os
+    import glob
+    from PIL import ImageTk as itk
+    while instance._process.poll() is None:
+        # Wait a bit, so we dont thrash the processor
+        time.sleep(1)
+        f_seq_it = next(glob.iglob(img_dir+'/*.png'), None)
+        if not f_seq_it:
+            continue
+        newest = max(glob.iglob(img_dir+'/*.png'), key=os.path.getctime)
+        def updater():
+            print newest
+            n_image = itk.PhotoImage(file=newest)
+            label.image = n_image
+            label.config(image=n_image)
+        instance._owner.event_queue.append(updater)
               
     
 def dispatch_monitor(instance):
-    worker = threading.Thread(target=monitor, 
+    worker1 = threading.Thread(target=it_monitor,
                               kwargs={'instance': instance})
-    worker.setDaemon(True)
-    worker.start()
+    worker1.setDaemon(True)
+    worker1.start()
+
+    # Create the toplevel window
+    top = Toplevel()
+    top.withdraw()
+    top.protocol("WM_DELETE_WINDOW", instance.open_view_pane)
+    top.columnconfigure(0, weight=1)
+    top.rowconfigure(0, weight=1)
+    top.title(str(instance._id) + " Training Progress")
+    instance._view_pane = top
+
+    from PIL import ImageTk as itk
+    def_img = itk.PhotoImage(file="machine-learning.jpg")
+    labial = Label(top, image=def_img)
+    labial.image = def_img
+    labial.pack()
+
+    worker2 = threading.Thread(target=img_monitor,
+                              kwargs={'instance': instance,
+                                      'label': labial})
+    worker2.setDaemon(True)
+    worker2.start()
     
    
 class Log:
@@ -140,6 +181,8 @@ class TrainingInstance(Frame):
     def __init__(self, parent, owner, _id_):
         Frame.__init__(self, parent)
         self._entries = []
+        self.view_pane = None
+        self._active = False
         self.Entry1 = Entry(self)
         self.Entry1.pack(side=LEFT)
         self.Entry1.configure(background="white")
@@ -208,6 +251,7 @@ class TrainingInstance(Frame):
         self.Button1.configure(activebackground="#d9d9d9")
         self.Button1.configure(text='''View''')
         self.Button1.configure(width=5)
+        self.Button1.configure(command=self.open_view_pane)
 
         self.Button2 = Button(self)
         self.Button2.pack(side=LEFT)
@@ -327,9 +371,8 @@ class TrainingInstance(Frame):
         
         
     def open_view_pane(self):
-        # Will create a TopLevel window that monitors a folder
-        # Updates the pane with the latest image that is put in the folder        
-        pass
+        self._view_pane.withdraw() if self._active else self._view_pane.deiconify()
+        self._active = not self._active
     
     def kill_instance(self):
         if not self.state == InstanceStates.PENDING:
