@@ -10,8 +10,8 @@ import tkFileDialog
 
 
 def load_dump(file_path, action=plt.show):
-    X = arange(-6., 6., 0.2)
-    Y = arange(-6., 6., 0.2)
+    X = arange(-9., 9., 0.2)
+    Y = arange(-9., 9., 0.2)
     X, Y = meshgrid(X, Y)
     Z = zeros(X.shape)
 

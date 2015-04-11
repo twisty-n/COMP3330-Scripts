@@ -14,15 +14,15 @@ import matplotlib.pyplot as plt
 import sys
 
 # This must point to a python installed with all of the various required libs
-PYTHON_EXE = '/home/tnewmann/anaconda/bin/python2.7'
-RUN_MASTER_DIR = 'dumps/run:'
+PYTHON_EXE = 'C:\Python27\python.exe'
+RUN_MASTER_DIR = 'dumps/run-'
 IMG_SUBDIR = '/img'
 DUMP_SUBDIR = '/nn'
 
 DEFAULT_HIDDEN = 'SigmoidLayer'
 DEFAULT_OUT = 'LinearLayer'
 
-DEFAULT_IMG_PRINT_COUNT = 50
+DEFAULT_IMG_PRINT_COUNT = 500
 DEFAULT_IMG_PRINT_CHOICE = True
 
 SCRIPT_NAME = 'trainNN2D.py'
@@ -35,7 +35,10 @@ def now():
     """
     Returns the current date and time as a string
     """
-    return str(datetime.datetime.now())
+    dtime = str(datetime.datetime.now())
+    dtime = dtime.replace(':', '-')
+    dtime = dtime.replace(' ', '-')
+    return dtime
 
 
 def loadCSV(filename, multiclass=True, outputs=1, separator=','):
@@ -135,7 +138,7 @@ def print_activation(file_name):
     if file_name == 'herp':  # Hax cause im a lazy bastard
         return
     print "Printing activation of file: " + file_name
-    subprocess.Popen(PYTHON_EXE+' graphNN2D.py \'' + file_name + '\'',
+    subprocess.Popen(PYTHON_EXE+' graphNN2D.py '+ file_name,
                                 shell=True)
 
 
@@ -171,9 +174,10 @@ def save_activation(files_made, img_path, dumper, defer=False):
         loader(files_made[-1], lambda: plt.savefig(img_name, 
                                       bbox_inches='tight'))
     else:
-        shell_string = PYTHON_EXE + ' graphNN2D.py \'' + files_made[-1] + '\''
+        shell_string = PYTHON_EXE + ' graphNN2D.py ' + files_made[-1] 
         shell_string += ' -s '
-        shell_string += '\''+img_name+'\''
+        shell_string += img_name
+        print shell_string
         subprocess.Popen(shell_string, shell=True)
                                        
     
@@ -210,8 +214,8 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
     momentum = 0.05                     # set in [0,0.5]
     batch_learning = False              # set to learn in batches
     validation_proportion = 0           # set in [0,0.5]
-    hidden_layers = [30, 10, 5]         # no of neurons in each hidden layer
-    iterations = 800                     # used only if vproportion is 0
+    hidden_layers = [25, 25, 25]         # no of neurons in each hidden layer
+    iterations = 10000                    # used only if vproportion is 0
     hidden_class = SigmoidLayer
     out_class = LinearLayer
 
@@ -245,7 +249,7 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
 
 
     # Will need to make changes here when implementing for another dataset
-    data, keys = loadCSV("smile.csv")
+    data, keys = loadCSV("custom2Spiral_density2_radius9.csv")
 
     if IS_STANDALONE:
         
