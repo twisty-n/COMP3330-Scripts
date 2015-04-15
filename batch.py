@@ -110,6 +110,7 @@ def img_monitor(instance, label):
     import os
     import glob
     from PIL import ImageTk as itk
+    # Change this to only upadate if there is a new image
     while instance._process.poll() is None:
         # Wait a bit, so we dont thrash the processor
         time.sleep(1)
@@ -118,7 +119,6 @@ def img_monitor(instance, label):
             continue
         newest = max(glob.iglob(img_dir+'/*.png'), key=os.path.getctime)
         def updater():
-            print newest
             n_image = itk.PhotoImage(file=newest)
             label.image = n_image
             label.config(image=n_image)
@@ -371,6 +371,7 @@ class TrainingInstance(Frame):
         return True
         
     def update(self, iter_val, error_val):
+        print 'Updating iterations'
         self.Entry8.delete(0, END)
         self.Entry8.insert(0, iter_val)
         self.Label11.configure(text=str(error_val))
@@ -493,6 +494,7 @@ class TTrainer():
         
     def _process_events(self):
         for event in self.event_queue:
+            print 'Processing event'
             event()
             self.event_queue.pop()
         self._master.after(50, self._process_events)
