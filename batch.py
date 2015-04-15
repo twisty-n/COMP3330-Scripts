@@ -51,11 +51,17 @@ class Command:
     def __init__(self, script):
         self.args = []
         self.args.append(script)
+
+    def __get_platform_quote(self):
+        if sys.platform == 'win32':
+            return "\""
+        else:
+            return "\'"
     
     def add_arg(self, arg, wrap_quotes=False):
         arg=str(arg)
         if wrap_quotes:
-            arg = "\'" + arg + "\'"
+            arg = self.__get_platform_quote()+ arg + self.__get_platform_quote()
         self.args.append(arg)
     
     def add_args(self, args):

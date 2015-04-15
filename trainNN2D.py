@@ -12,22 +12,23 @@ from pybrain.tools.shortcuts import buildNetwork
 from pybrain.supervised.trainers import BackpropTrainer
 import matplotlib.pyplot as plt
 import sys
+import PERSONAL_SETTINGS
 
 # This must point to a python installed with all of the various required libs
-PYTHON_EXE = 'C:\Python27\python.exe'
-RUN_MASTER_DIR = 'dumps/run-'
-IMG_SUBDIR = '/img'
-DUMP_SUBDIR = '/nn'
+PYTHON_EXE = PERSONAL_SETTINGS.PYTHON_EXE
+RUN_MASTER_DIR = PERSONAL_SETTINGS.RUN_MASTER_DIR
+IMG_SUBDIR = PERSONAL_SETTINGS.IMG_SUBDIR
+DUMP_SUBDIR = PERSONAL_SETTINGS.DUMP_SUBDIR
 
-DEFAULT_HIDDEN = 'SigmoidLayer'
-DEFAULT_OUT = 'LinearLayer'
+DEFAULT_HIDDEN = PERSONAL_SETTINGS.DEFAULT_HIDDEN
+DEFAULT_OUT = PERSONAL_SETTINGS.DEFAULT_OUT
 
-DEFAULT_IMG_PRINT_COUNT = 500
-DEFAULT_IMG_PRINT_CHOICE = True
+DEFAULT_IMG_PRINT_COUNT = PERSONAL_SETTINGS.DEFAULT_IMG_PRINT_COUNT
+DEFAULT_IMG_PRINT_CHOICE = PERSONAL_SETTINGS.DEFAULT_IMG_PRINT_CHOICE
 
-SCRIPT_NAME = 'trainNN2D.py'
+SCRIPT_NAME = PERSONAL_SETTINGS.SCRIPT_NAME
 
-IS_STANDALONE = True
+IS_STANDALONE = PERSONAL_SETTINGS.IS_STANDALONE
 
 
 
@@ -177,7 +178,7 @@ def save_activation(files_made, img_path, dumper, defer=False):
         shell_string = PYTHON_EXE + ' graphNN2D.py ' + files_made[-1] 
         shell_string += ' -s '
         shell_string += img_name
-        print shell_string
+        #print shell_string
         subprocess.Popen(shell_string, shell=True)
                                        
     
@@ -262,6 +263,7 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
                                   batchlearning=batch_learning)
     else:
         #Transform the params required inline
+        p_params = str(params)
         iterations = int(params['iterations'])
         hidden_layers_str = params['hidden_layer'].split(",")
         hidden_layers_int = []
