@@ -124,7 +124,7 @@ def dump(neural_net, files_made, dump_dir, print_params=False, params=None):
     pk_d = dump_dir + '/NN' + dt + '.pkl'
     files_made.append(pk_d)
     pickle.dump(neural_net, open(pk_d, 'wb'))
-    # Also allow paramater printout
+    #Also allow paramater printout
     if print_params:
         param_file = open(dump_dir + '/params/PARAM_DUMP_'+dt+'.txt', "w")
         for key, value in params.iteritems():
@@ -160,7 +160,7 @@ def create_window(nn, error, files_list, dump_dir):
     win.mainloop()
 
 
-def save_activation(files_made, img_path, dumper, defer=False):
+def save_activation(files_made, img_path, error_val, dumper, defer=False):
     # TODO: Fix this up !
     """
     Saves a neural network activation plot as a picture
@@ -170,7 +170,7 @@ def save_activation(files_made, img_path, dumper, defer=False):
         print "Error no Dumper specified!"
         return
     dumper()
-    img_name = img_path + '/AP-'+now()+'.png'
+    img_name = img_path + '/AP-'+now()+'_error-' + '%.5f'%(error_val) +'.png'
     if not defer:
         loader(files_made[-1], lambda: plt.savefig(img_name, 
                                       bbox_inches='tight'))
@@ -210,13 +210,13 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
     """
     # training parameters for neural networks:
     # Used when this script is standalone
-    learning_rate = 0.1                 # set in [0,1]
-    learning_decay = 1                  # try 0.999, set in [0.9,1]
-    momentum = 0.05                     # set in [0,0.5]
-    batch_learning = False              # set to learn in batches
-    validation_proportion = 0           # set in [0,0.5]
-    hidden_layers = [25, 25, 25]         # no of neurons in each hidden layer
-    iterations = 10000                    # used only if vproportion is 0
+    learning_rate = 0.02                    # set in [0,1]
+    learning_decay = 1                      # try 0.999, set in [0.9,1]
+    momentum = 0.4                          # set in [0,0.5]
+    batch_learning = False                  # set to learn in batches
+    validation_proportion = 0               # set in [0,0.5]
+    hidden_layers = [25, 25, 25]            # no of neurons in each hidden layer
+    iterations = 10000                      # used only if vproportion is 0
     hidden_class = SigmoidLayer
     out_class = LinearLayer
 
@@ -237,20 +237,21 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
     os.mkdir(dump_path+'/params')
 
     p_params = {
-        'Learning Rate: ':          str(learning_rate),
-        'Learning Decay:':          str(learning_decay),
-        'Momentum: ':                 str(momentum),
-        'Batch Learning':           str(batch_learning),
-        'Validation Proportion: ':  str(validation_proportion),
-        'Hidden Layers ':           str(hidden_layers),
-        'Iterations: ':             str(iterations),
-        'Hidden Class: ':           str(hidden_class).split('.')[-1],
-        'Out Class: ':              str(out_class).split('.')[-1]
+        'Learning Rate: ':              str(learning_rate),
+        'Learning Decay:':              str(learning_decay),
+        'Momentum: ':                   str(momentum),
+        'Batch Learning':               str(batch_learning),
+        'Validation Proportion: ':      str(validation_proportion),
+        'Hidden Layers ':               str(hidden_layers),
+        'Iterations: ':                 str(iterations),
+        'Hidden Class: ':               str(hidden_class).split('.')[-1],
+        'Out Class: ':                  str(out_class).split('.')[-1],
+        'Visualisation Iterations: ':   str(print_iters)
     }
 
 
     # Will need to make changes here when implementing for another dataset
-    data, keys = loadCSV("custom2Spiral_density2_radius9.csv")
+    data, keys = loadCSV("4spiral_data_set.csv")
 
     if IS_STANDALONE:
         
@@ -305,6 +306,7 @@ def train(activation_stream=False, print_iters=0, path=None, params=None):
                 if stream and (i % print_val == 0):
                     save_activation(files_made, 
                                     img_path,
+                                    error_val,
                                     lambda: dump(nn, files_made, dump_path),
                                     True)
         else:

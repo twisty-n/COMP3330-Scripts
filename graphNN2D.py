@@ -2,6 +2,7 @@ import pickle
 from numpy import arange
 from numpy import meshgrid
 from numpy import zeros
+import numpy as np
 import matplotlib.pyplot as plt
 import sys
 
@@ -10,8 +11,8 @@ import tkFileDialog
 
 
 def load_dump(file_path, action=plt.show):
-    X = arange(-9., 9., 0.2)
-    Y = arange(-9., 9., 0.2)
+    X = arange(-6.5, 6.5, 0.2)
+    Y = arange(-6.5, 6.5, 0.2)
     X, Y = meshgrid(X, Y)
     Z = zeros(X.shape)
 
@@ -20,11 +21,21 @@ def load_dump(file_path, action=plt.show):
     for i in range(len(X)):
         for j in range(len(Y)):
             result = model.activate([X[i][j], Y[i][j]])
-            if result[0] > result[1]:
-                Z[i][j] = 0  # lower limit
-            else:
-                Z[i][j] = 100  # higher limit
+            
+            #classification using n output neurons
+            #representing the n classes
+            #output is scaled by 100 to better differentiate between classes
+            #this is a bit dodgy - if there are many many output classes (e.g. 10,000),
+            #it would no longer work. This might be able to be replaced with an activation function?
+            Z[i][j] = np.argmax(result)*100            
+            
+            #2 class classification (provided by Josiah)
+            #if result[0] > result[1]:
+            #    Z[i][j] = 0  # lower limit
+            #else:
+            #    Z[i][j] = 100  # higher limit
     plt.imshow(Z)
+    
     plt.gcf()
     plt.clim()
     plt.title("Neural Network Activation")
